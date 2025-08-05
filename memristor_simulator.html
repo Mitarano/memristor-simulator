@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memristor Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-row input[type="range"] {
+            margin-left: auto;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .control-row select {
+            margin-left: 12px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 105px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .value-display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: 'Monaco', monospace;
+            color: #ffffff;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        select option {
+            background: #4a5568;
+            color: #ffffff;
+        }
+
+        .simulation-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #chart {
+            width: 100%;
+            height: 500px;
+            border-radius: 15px;
+            background: #ffffff;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .chart-title {
+            color: #2d3748;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .controls-panel {
+                order: 2;
+            }
+
+            .chart-container {
+                order: 1;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Memristor Simulator</h1>
+            <p>current-voltage curve simulation with interactive parameter control</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>Memristor Model</h3>
+                    <select id="modelSelect">
+                        <option value="linear">Linear Ion Drift Model</option>
+                        <option value="joglekar">Joglekar Model</option>
+                        <option value="biolek">Biolek Model</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <h3>Input Signal</h3>
+                    <div class="control-row">
+                        <label>Waveform:</label>
+                        <select id="waveformSelect">
+                            <option value="sine">Sine Wave</option>
+                            <option value="square">Square Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                            <option value="sawtooth">Sawtooth Wave</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Frequency (Hz):</label>
+                        <input type="range" id="frequency" min="1000" max="500000" value="160000" step="1000">
+                        <span class="value-display" id="freqValue">160k</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Amplitude (V):</label>
+                        <input type="range" id="amplitude" min="0.1" max="5" value="1" step="0.1">
+                        <span class="value-display" id="ampValue">1.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Memristor Parameters</h3>
+                    <div class="control-row">
+                        <label>μ_v (m²/V·s):</label>
+                        <input type="range" id="muV" min="1e-10" max="1e-8" value="1e-9" step="1e-10">
+                        <span class="value-display" id="muVValue">1e-9</span>
+                    </div>
+                    <div class="control-row">
+                        <label>D (m):</label>
+                        <input type="range" id="D" min="1e-9" max="1e-7" value="1e-8" step="1e-10">
+                        <span class="value-display" id="DValue">1e-8</span>
+                    </div>
+                    <div class="control-row">
+                        <label>R_ON (Ω):</label>
+                        <input type="range" id="rOn" min="10" max="1000" value="100" step="10">
+                        <span class="value-display" id="rOnValue">100</span>
+                    </div>
+                    <div class="control-row">
+                        <label>R_OFF (Ω):</label>
+                        <input type="range" id="rOff" min="1000" max="50000" value="16000" step="1000">
+                        <span class="value-display" id="rOffValue">16k</span>
+                    </div>
+                    <div class="control-row" id="pControl" style="display: none;">
+                        <label>p:</label>
+                        <input type="range" id="p" min="1" max="10" value="1" step="1">
+                        <span class="value-display" id="pValue">1</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Simulation</h3>
+                    <div class="control-row">
+                        <label>Duration (μs):</label>
+                        <input type="range" id="duration" min="1" max="100" value="20" step="0.1">
+                        <span class="value-display" id="durationValue">20</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Time Step (μs):</label>
+                        <input type="range" id="timeStep" min="1e-4" max="1e-1" value="1e-2" step="1e-3">
+                        <span class="value-display" id="timeStepValue">1e-2</span>
+                    </div>
+                </div>
+
+                <div class="simulation-controls">
+                    <button class="btn-secondary" id="resetBtn">Reset</button>
+                </div>
+
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span id="statusText">Ready to simulate</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">I-V Hysteresis Curve</div>
+                <div id="chart"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Memristor Models
+        class BiolekMemristor {
+            constructor(mu_v = 1e-9, D = 1e-8, R_ON = 100, R_OFF = 16e3, w_init = null, p = 1) {
+                this.mu_v = mu_v;
+                this.D = D;
+                this.R_ON = R_ON;
+                this.R_OFF = R_OFF;
+                this.w = w_init !== null ? Math.max(0, Math.min(w_init, this.D)) : D / 2;
+                this.p = p;
+                this._updateMemristance();
+            }
+
+            _updateMemristance() {
+                this.M = this.R_ON * (this.w / this.D) + this.R_OFF * (1 - (this.w / this.D));
+                this.W = 1.0 / this.M;
+            }
+
+            stepFunction(i) {
+                return i >= 0 ? 1.0 : 0.0;
+            }
+
+            windowFunction(x, i) {
+                return 1.0 - Math.pow(x - this.stepFunction(-i), 2 * this.p);
+            }
+
+            updateState(V, dt) {
+                const i = this.getCurrent(V);
+                const f_w = this.windowFunction(this.w / this.D, i);
+                const dw_dt = this.mu_v * (this.R_ON / this.D) * i * f_w;
+                this.w += dw_dt * dt;
+                this.w = Math.max(0, Math.min(this.w, this.D));
+                this._updateMemristance();
+            }
+
+            getCurrent(V) {
+                return V / this.M;
+            }
+        }
+
+        class JoglekarMemristor {
+            constructor(mu_v = 1e-9, D = 1e-8, R_ON = 100, R_OFF = 16e3, w_init = null, p = 1) {
+                this.mu_v = mu_v;
+                this.D = D;
+                this.R_ON = R_ON;
+                this.R_OFF = R_OFF;
+                this.w = w_init !== null ? Math.max(0, Math.min(w_init, this.D)) : D / 2;
+                this.p = p;
+                this._updateMemristance();
+            }
+
+            _updateMemristance() {
+                this.M = this.R_ON * (this.w / this.D) + this.R_OFF * (1 - (this.w / this.D));
+                this.W = 1.0 / this.M;
+            }
+
+            windowFunction(x) {
+                return 1 - Math.pow(2 * x - 1, 2 * this.p);
+            }
+
+            updateState(V, dt) {
+                const i = this.getCurrent(V);
+                const f_w = this.windowFunction(this.w / this.D);
+                const dw_dt = this.mu_v * (this.R_ON / this.D) * i * f_w;
+                this.w += dw_dt * dt;
+                this.w = Math.max(0, Math.min(this.w, this.D));
+                this._updateMemristance();
+            }
+
+            getCurrent(V) {
+                return V / this.M;
+            }
+        }
+
+        class LinearIonDriftMemristor {
+            constructor(mu_v = 1e-9, D = 1e-8, R_ON = 100, R_OFF = 16e3, w_init = null) {
+                this.mu_v = mu_v;
+                this.D = D;
+                this.R_ON = R_ON;
+                this.R_OFF = R_OFF;
+                this.w = w_init !== null ? Math.max(0, Math.min(w_init, this.D)) : D / 2;
+                this._updateMemristance();
+            }
+
+            _updateMemristance() {
+                this.M = this.R_ON * (this.w / this.D) + this.R_OFF * (1 - (this.w / this.D));
+                this.W = 1.0 / this.M;
+            }
+
+            updateState(V, dt) {
+                const i = this.getCurrent(V);
+                const dw_dt = (this.mu_v * this.R_ON / this.D) * i;
+                this.w += dw_dt * dt;
+                this.w = Math.max(0, Math.min(this.w, this.D));
+                this._updateMemristance();
+            }
+
+            getCurrent(V) {
+                return V / this.M;
+            }
+        }
+
+        // Waveform generators
+        function generateWaveform(type, t, frequency, amplitude) {
+            const omega = 2 * Math.PI * frequency;
+
+            switch (type) {
+                case 'sine':
+                    return t.map(time => amplitude * Math.sin(omega * time));
+                case 'square':
+                    return t.map(time => amplitude * Math.sign(Math.sin(omega * time)));
+                case 'triangle':
+                    return t.map(time => {
+                        const phase = (omega * time) % (2 * Math.PI);
+                        if (phase < Math.PI) {
+                            return amplitude * (2 * phase / Math.PI - 1);
+                        } else {
+                            return amplitude * (3 - 2 * phase / Math.PI);
+                        }
+                    });
+                case 'sawtooth':
+                    return t.map(time => {
+                        const phase = (omega * time) % (2 * Math.PI);
+                        return amplitude * (2 * phase / (2 * Math.PI) - 1);
+                    });
+                default:
+                    return t.map(time => amplitude * Math.sin(omega * time));
+            }
+        }
+
+        // Simulation function
+        function simulateMemristor(memristor, V_seq, dt) {
+            const I_mem = [];
+
+            for (let i = 0; i < V_seq.length; i++) {
+                const current = memristor.getCurrent(V_seq[i]);
+                I_mem.push(current);
+                memristor.updateState(V_seq[i], dt);
+            }
+
+            return I_mem;
+        }
+
+        // UI Management
+        class SimulatorUI {
+            constructor() {
+                this.initializeElements();
+                this.setupEventListeners();
+                this.updateAllDisplays();
+                this.initializeChart();
+                this.runSimulation();
+            }
+
+            initializeElements() {
+                // Get all UI elements
+                this.elements = {
+                    modelSelect: document.getElementById('modelSelect'),
+                    waveformSelect: document.getElementById('waveformSelect'),
+                    frequency: document.getElementById('frequency'),
+                    amplitude: document.getElementById('amplitude'),
+                    muV: document.getElementById('muV'),
+                    D: document.getElementById('D'),
+                    rOn: document.getElementById('rOn'),
+                    rOff: document.getElementById('rOff'),
+                    p: document.getElementById('p'),
+                    duration: document.getElementById('duration'),
+                    timeStep: document.getElementById('timeStep'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    statusText: document.getElementById('statusText'),
+                    pControl: document.getElementById('pControl')
+                };
+
+                // Value display elements
+                this.valueDisplays = {
+                    freqValue: document.getElementById('freqValue'),
+                    ampValue: document.getElementById('ampValue'),
+                    muVValue: document.getElementById('muVValue'),
+                    DValue: document.getElementById('DValue'),
+                    rOnValue: document.getElementById('rOnValue'),
+                    rOffValue: document.getElementById('rOffValue'),
+                    pValue: document.getElementById('pValue'),
+                    durationValue: document.getElementById('durationValue'),
+                    timeStepValue: document.getElementById('timeStepValue')
+                };
+            }
+
+            setupEventListeners() {
+                // Model selection
+                this.elements.modelSelect.addEventListener('change', () => {
+                    this.updatePControlVisibility();
+                    this.runSimulation();
+                });
+
+                // Real-time parameter updates
+                Object.keys(this.elements).forEach(key => {
+                    if (this.elements[key].type === 'range' || this.elements[key].tagName === 'SELECT') {
+                        this.elements[key].addEventListener('input', () => {
+                            this.updateAllDisplays();
+                            this.runSimulation();
+                        });
+                    }
+                });
+
+                // Buttons
+                this.elements.resetBtn.addEventListener('click', () => this.resetSimulation());
+            }
+
+            updatePControlVisibility() {
+                const model = this.elements.modelSelect.value;
+                this.elements.pControl.style.display =
+                    (model === 'biolek' || model === 'joglekar') ? 'flex' : 'none';
+            }
+
+            updateAllDisplays() {
+                // Update frequency display
+                const freq = parseFloat(this.elements.frequency.value);
+                this.valueDisplays.freqValue.textContent = freq >= 1000 ? `${(freq / 1000).toFixed(0)}k` : freq.toString();
+
+                // Update amplitude display
+                this.valueDisplays.ampValue.textContent = parseFloat(this.elements.amplitude.value).toFixed(1);
+
+                // Update scientific notation displays
+                this.valueDisplays.muVValue.textContent = parseFloat(this.elements.muV.value).toExponential(0);
+                this.valueDisplays.DValue.textContent = parseFloat(this.elements.D.value).toExponential(0);
+                this.valueDisplays.timeStepValue.textContent = parseFloat(this.elements.timeStep.value).toExponential(0);
+
+                // Update resistance displays
+                const rOff = parseFloat(this.elements.rOff.value);
+                this.valueDisplays.rOnValue.textContent = this.elements.rOn.value;
+                this.valueDisplays.rOffValue.textContent = rOff >= 1000 ? `${(rOff / 1000).toFixed(0)}k` : rOff.toString();
+
+                // Update other displays
+                this.valueDisplays.pValue.textContent = this.elements.p.value;
+                this.valueDisplays.durationValue.textContent = parseFloat(this.elements.duration.value).toFixed(1);
+            }
+
+            initializeChart() {
+                const layout = {
+                    title: false,
+                    xaxis: {
+                        title: 'Voltage (V)',
+                        gridcolor: '#e2e8f0',
+                        zeroline: true,
+                        zerolinecolor: '#cbd5e0'
+                    },
+                    yaxis: {
+                        title: 'Current (A)',
+                        gridcolor: '#e2e8f0',
+                        zeroline: true,
+                        zerolinecolor: '#cbd5e0'
+                    },
+                    plot_bgcolor: '#ffffff',
+                    paper_bgcolor: '#ffffff',
+                    font: {
+                        family: 'Inter, sans-serif',
+                        size: 12,
+                        color: '#2d3748'
+                    },
+                    margin: { t: 20, r: 20, b: 60, l: 80 }
+                };
+
+                const config = {
+                    responsive: true,
+                    displayModeBar: false
+                };
+
+                Plotly.newPlot('chart', [], layout, config);
+            }
+
+            runSimulation() {
+                this.elements.statusText.textContent = 'Running simulation...';
+
+                setTimeout(() => {
+                    try {
+                        // Get parameters
+                        const modelType = this.elements.modelSelect.value;
+                        const waveform = this.elements.waveformSelect.value;
+                        const frequency = parseFloat(this.elements.frequency.value);
+                        const amplitude = parseFloat(this.elements.amplitude.value);
+                        const mu_v = parseFloat(this.elements.muV.value);
+                        const D = parseFloat(this.elements.D.value);
+                        const R_ON = parseFloat(this.elements.rOn.value);
+                        const R_OFF = parseFloat(this.elements.rOff.value);
+                        const p = parseFloat(this.elements.p.value);
+                        const duration = parseFloat(this.elements.duration.value) * 1e-6; // Convert to seconds
+                        const dt = parseFloat(this.elements.timeStep.value) * 1e-6; // Convert to seconds
+
+                        // Create memristor
+                        let memristor;
+                        switch (modelType) {
+                            case 'biolek':
+                                memristor = new BiolekMemristor(mu_v, D, R_ON, R_OFF, null, p);
+                                break;
+                            case 'joglekar':
+                                memristor = new JoglekarMemristor(mu_v, D, R_ON, R_OFF, null, p);
+                                break;
+                            case 'linear':
+                                memristor = new LinearIonDriftMemristor(mu_v, D, R_ON, R_OFF);
+                                break;
+                        }
+
+                        // Generate time vector
+                        const numPoints = Math.floor(duration / dt);
+                        const t = Array.from({ length: numPoints }, (_, i) => i * dt);
+
+                        // Generate voltage sequence
+                        const V_seq = generateWaveform(waveform, t, frequency, amplitude);
+
+                        // Run simulation
+                        const I_mem = simulateMemristor(memristor, V_seq, dt);
+
+                        // Plot results
+                        this.plotHysteresis(V_seq, I_mem);
+
+                        this.elements.statusText.textContent = `Simulation complete (${numPoints} points)`;
+                    } catch (error) {
+                        console.error('Simulation error:', error);
+                        this.elements.statusText.textContent = 'Simulation error';
+                    }
+                }, 10);
+            }
+
+            plotHysteresis(V_seq, I_mem) {
+                const trace = {
+                    x: V_seq,
+                    y: I_mem,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: '#667eea',
+                        width: 2
+                    },
+                    name: 'I-V Curve'
+                };
+
+                const layout = {
+                    title: false,
+                    xaxis: {
+                        title: 'Voltage (V)',
+                        gridcolor: '#e2e8f0',
+                        zeroline: true,
+                        zerolinecolor: '#cbd5e0'
+                    },
+                    yaxis: {
+                        title: 'Current (A)',
+                        gridcolor: '#e2e8f0',
+                        zeroline: true,
+                        zerolinecolor: '#cbd5e0'
+                    },
+                    plot_bgcolor: '#ffffff',
+                    paper_bgcolor: '#ffffff',
+                    font: {
+                        family: 'Inter, sans-serif',
+                        size: 12,
+                        color: '#2d3748'
+                    },
+                    margin: { t: 20, r: 20, b: 60, l: 80 },
+                    showlegend: false
+                };
+
+                Plotly.newPlot('chart', [trace], layout, { responsive: true, displayModeBar: false });
+            }
+
+            resetSimulation() {
+                // Reset all controls to default values
+                this.elements.modelSelect.value = 'linear';
+                this.elements.waveformSelect.value = 'sine';
+                this.elements.frequency.value = '160000';
+                this.elements.amplitude.value = '1';
+                this.elements.muV.value = '1e-9';
+                this.elements.D.value = '1e-8';
+                this.elements.rOn.value = '100';
+                this.elements.rOff.value = '16000';
+                this.elements.p.value = '1';
+                this.elements.duration.value = '20';
+                this.elements.timeStep.value = '1e-2';
+
+                this.updateAllDisplays();
+                this.updatePControlVisibility();
+                this.initializeChart();
+                this.elements.statusText.textContent = 'Reset complete - Ready to simulate';
+                this.runSimulation();
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new SimulatorUI();
+        });
+    </script>
+</body>
+
+</html>
