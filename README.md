@@ -2,8 +2,7 @@
 Interactive simulation of memristor models.
 
 Currently supported models:
-
-- Linear Ion Drift
-- Joglekar
-- Biolek
-- MMS (probabilistic switching)
+- Linear Ion Drift Model
+- Joglekar Model
+- Biolek Model
+- MMS Model

@@ -305,47 +305,47 @@
 
                 <div class="control-group">
                     <h3>Memristor Parameters</h3>
-                    <div class="control-row">
+                    <div class="control-row param-linear param-biolek param-joglekar">
                         <label>μ_v (m²/V·s):</label>
                         <input type="range" id="muV" min="1e-10" max="1e-8" value="1e-9" step="1e-10">
                         <span class="value-display" id="muVValue">1e-9</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-linear param-biolek param-joglekar">
                         <label>D (m):</label>
                         <input type="range" id="D" min="1e-9" max="1e-7" value="1e-8" step="1e-10">
                         <span class="value-display" id="DValue">1e-8</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-linear param-biolek param-joglekar param-mms">
                         <label>R_ON (Ω):</label>
                         <input type="range" id="rOn" min="10" max="1000" value="100" step="10">
                         <span class="value-display" id="rOnValue">100</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-linear param-biolek param-joglekar param-mms">
                         <label>R_OFF (Ω):</label>
                         <input type="range" id="rOff" min="1000" max="50000" value="16000" step="1000">
                         <span class="value-display" id="rOffValue">16k</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-mms">
                         <label>U_ON (V):</label>
                         <input type="range" id="uOn" min="0" max="1" value="0.27" step="0.01">
                         <span class="value-display" id="uOnValue">0.27</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-mms">
                         <label>U_OFF (V):</label>
                         <input type="range" id="uOff" min="0" max="1" value="0.27" step="0.01">
                         <span class="value-display" id="uOffValue">0.27</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-mms">
                         <label>τ (s):</label>
                         <input type="range" id="tau" min="1e-6" max="1e-2" value="1e-4" step="1e-5">
                         <span class="value-display" id="tauValue">1e-4</span>
                     </div>
-                    <div class="control-row">
+                    <div class="control-row param-mms">
                         <label>T (K):</label>
                         <input type="range" id="temperature" min="250" max="400" value="298.5" step="0.5">
                         <span class="value-display" id="temperatureValue">298.5</span>
                     </div>
-                    <div class="control-row" id="pControl" style="display: none;">
+                    <div class="control-row param-biolek param-joglekar" id="pControl">
                         <label>p:</label>
                         <input type="range" id="p" min="1" max="10" value="1" step="1">
                         <span class="value-display" id="pValue">1</span>
@@ -569,6 +569,7 @@
                 this.setupEventListeners();
                 this.updateAllDisplays();
                 this.initializeChart();
+                this.updateModelControls();
                 this.runSimulation();
             }
 
@@ -616,7 +617,7 @@
             setupEventListeners() {
                 // Model selection
                 this.elements.modelSelect.addEventListener('change', () => {
-                    this.updatePControlVisibility();
+                    this.updateModelControls();
                     this.runSimulation();
                 });
 
@@ -634,10 +635,17 @@
                 this.elements.resetBtn.addEventListener('click', () => this.resetSimulation());
             }
 
-            updatePControlVisibility() {
-                const model = this.elements.modelSelect.value;
-                this.elements.pControl.style.display =
-                    (model === 'biolek' || model === 'joglekar') ? 'flex' : 'none';
+            updateModelControls() {
+                const m = this.elements.modelSelect.value;
+
+                // Hide all model-specific parameter rows
+                document.querySelectorAll(
+                    '.param-linear, .param-biolek, .param-joglekar, .param-mms'
+                ).forEach(el => el.style.display = 'none');
+
+                // Show only those belonging to the selected model
+                document.querySelectorAll('.param-' + m)
+                    .forEach(el => el.style.display = 'flex');
             }
 
             updateAllDisplays() {
@@ -822,7 +830,7 @@
                 this.elements.timeStep.value = '1e-2';
 
                 this.updateAllDisplays();
-                this.updatePControlVisibility();
+                this.updateModelControls();
                 this.initializeChart();
                 this.elements.statusText.textContent = 'Reset complete - Ready to simulate';
                 this.runSimulation();
