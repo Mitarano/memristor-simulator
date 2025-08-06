@@ -276,6 +276,7 @@
                         <option value="linear">Linear Ion Drift Model</option>
                         <option value="joglekar">Joglekar Model</option>
                         <option value="biolek">Biolek Model</option>
+                        <option value="mms">MMS Model</option>
                     </select>
                 </div>
 
@@ -323,6 +324,26 @@
                         <label>R_OFF (Ω):</label>
                         <input type="range" id="rOff" min="1000" max="50000" value="16000" step="1000">
                         <span class="value-display" id="rOffValue">16k</span>
+                    </div>
+                    <div class="control-row">
+                        <label>U_ON (V):</label>
+                        <input type="range" id="uOn" min="0" max="1" value="0.27" step="0.01">
+                        <span class="value-display" id="uOnValue">0.27</span>
+                    </div>
+                    <div class="control-row">
+                        <label>U_OFF (V):</label>
+                        <input type="range" id="uOff" min="0" max="1" value="0.27" step="0.01">
+                        <span class="value-display" id="uOffValue">0.27</span>
+                    </div>
+                    <div class="control-row">
+                        <label>τ (s):</label>
+                        <input type="range" id="tau" min="1e-6" max="1e-2" value="1e-4" step="1e-5">
+                        <span class="value-display" id="tauValue">1e-4</span>
+                    </div>
+                    <div class="control-row">
+                        <label>T (K):</label>
+                        <input type="range" id="temperature" min="250" max="400" value="298.5" step="0.5">
+                        <span class="value-display" id="temperatureValue">298.5</span>
                     </div>
                     <div class="control-row" id="pControl" style="display: none;">
                         <label>p:</label>
@@ -464,6 +485,42 @@
             }
         }
 
+        class MMSMemristor {
+            constructor(R_on = 500, R_off = 1500, U_on = 0.27, U_off = 0.27, tau = 1e-4, T = 298.5, x_init = 0) {
+                this.R_on = R_on;
+                this.R_off = R_off;
+                this.U_on = U_on;
+                this.U_off = U_off;
+                this.tau = tau;
+                this.T = T;
+                this.q = 1.602176634e-19;
+                this.k = 1.380649e-23;
+                this.x = Math.max(0, Math.min(x_init, 1));
+                this._updateMemristance();
+            }
+
+            _updateMemristance() {
+                this.W = this.x / this.R_on + (1.0 - this.x) / this.R_off;
+                this.M = 1.0 / this.W;
+            }
+
+            updateState(V, dt) {
+                const alpha = dt / this.tau;
+                const beta = this.q / (this.k * this.T);
+                const P_on = alpha / (1 + Math.exp(-beta * (V - this.U_on)));
+                const P_off = alpha * (1 - 1 / (1 + Math.exp(-beta * (V + this.U_off))));
+                const N_on = P_on * (1 - this.x);
+                const N_off = P_off * this.x;
+                this.x += N_on - N_off;
+                this.x = Math.max(0, Math.min(this.x, 1));
+                this._updateMemristance();
+            }
+
+            getCurrent(V) {
+                return V * this.W;
+            }
+        }
+
         // Waveform generators
         function generateWaveform(type, t, frequency, amplitude) {
             const omega = 2 * Math.PI * frequency;
@@ -526,6 +583,10 @@
                     D: document.getElementById('D'),
                     rOn: document.getElementById('rOn'),
                     rOff: document.getElementById('rOff'),
+                    uOn: document.getElementById('uOn'),
+                    uOff: document.getElementById('uOff'),
+                    tau: document.getElementById('tau'),
+                    temperature: document.getElementById('temperature'),
                     p: document.getElementById('p'),
                     duration: document.getElementById('duration'),
                     timeStep: document.getElementById('timeStep'),
@@ -542,6 +603,10 @@
                     DValue: document.getElementById('DValue'),
                     rOnValue: document.getElementById('rOnValue'),
                     rOffValue: document.getElementById('rOffValue'),
+                    uOnValue: document.getElementById('uOnValue'),
+                    uOffValue: document.getElementById('uOffValue'),
+                    tauValue: document.getElementById('tauValue'),
+                    temperatureValue: document.getElementById('temperatureValue'),
                     pValue: document.getElementById('pValue'),
                     durationValue: document.getElementById('durationValue'),
                     timeStepValue: document.getElementById('timeStepValue')
@@ -592,6 +657,12 @@
                 const rOff = parseFloat(this.elements.rOff.value);
                 this.valueDisplays.rOnValue.textContent = this.elements.rOn.value;
                 this.valueDisplays.rOffValue.textContent = rOff >= 1000 ? `${(rOff / 1000).toFixed(0)}k` : rOff.toString();
+
+                // Update MMS model displays
+                this.valueDisplays.uOnValue.textContent = parseFloat(this.elements.uOn.value).toFixed(2);
+                this.valueDisplays.uOffValue.textContent = parseFloat(this.elements.uOff.value).toFixed(2);
+                this.valueDisplays.tauValue.textContent = parseFloat(this.elements.tau.value).toExponential(0);
+                this.valueDisplays.temperatureValue.textContent = parseFloat(this.elements.temperature.value).toFixed(1);
 
                 // Update other displays
                 this.valueDisplays.pValue.textContent = this.elements.p.value;
@@ -645,6 +716,10 @@
                         const D = parseFloat(this.elements.D.value);
                         const R_ON = parseFloat(this.elements.rOn.value);
                         const R_OFF = parseFloat(this.elements.rOff.value);
+                        const U_ON = parseFloat(this.elements.uOn.value);
+                        const U_OFF = parseFloat(this.elements.uOff.value);
+                        const tau = parseFloat(this.elements.tau.value);
+                        const temperature = parseFloat(this.elements.temperature.value);
                         const p = parseFloat(this.elements.p.value);
                         const duration = parseFloat(this.elements.duration.value) * 1e-6; // Convert to seconds
                         const dt = parseFloat(this.elements.timeStep.value) * 1e-6; // Convert to seconds
@@ -660,6 +735,9 @@
                                 break;
                             case 'linear':
                                 memristor = new LinearIonDriftMemristor(mu_v, D, R_ON, R_OFF);
+                                break;
+                            case 'mms':
+                                memristor = new MMSMemristor(R_ON, R_OFF, U_ON, U_OFF, tau, temperature);
                                 break;
                         }
 
@@ -735,6 +813,10 @@
                 this.elements.D.value = '1e-8';
                 this.elements.rOn.value = '100';
                 this.elements.rOff.value = '16000';
+                this.elements.uOn.value = '0.27';
+                this.elements.uOff.value = '0.27';
+                this.elements.tau.value = '1e-4';
+                this.elements.temperature.value = '298.5';
                 this.elements.p.value = '1';
                 this.elements.duration.value = '20';
                 this.elements.timeStep.value = '1e-2';
