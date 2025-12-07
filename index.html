@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memristor Simulator</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
 </head>
 
@@ -13,7 +14,11 @@
     <div class="container">
         <div class="header">
             <h1>Memristor Simulator</h1>
-            <p>V-I curve simulation with interactive parameter control</p>
+            <p>Current-Voltage curve simulation with interactive parameter control</p>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <i class="fas fa-sun icon"></i>
+                <span class="theme-text">Light</span>
+            </button>
         </div>
 
         <div class="main-content">
@@ -242,7 +247,7 @@
             </div>
 
             <div class="chart-container">
-                <div class="chart-title">V-I Hysteresis Curve</div>
+                <div class="chart-title">Current-Voltage Hysteresis Curve</div>
                 <div id="chart"></div>
             </div>
         </div>

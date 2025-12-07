@@ -274,6 +274,60 @@ function simulateMemristor(memristor, V_seq, dt) {
     return I_mem;
 }
 
+// Theme Management
+function getSystemTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const theme = savedTheme || getSystemTheme();
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeButton(theme);
+
+    // Listen for system theme changes only if user hasn't set a preference
+    if (!savedTheme) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                const newTheme = e.matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                updateThemeButton(newTheme);
+                if (window.simulatorUI) {
+                    window.simulatorUI.runSimulation();
+                }
+            }
+        });
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeButton(newTheme);
+
+    // Re-render the chart with new theme colors
+    if (window.simulatorUI) {
+        window.simulatorUI.runSimulation();
+    }
+}
+
+function updateThemeButton(theme) {
+    const button = document.getElementById('themeToggle');
+    if (button) {
+        const icon = button.querySelector('.icon');
+        const text = button.querySelector('.theme-text');
+        if (theme === 'dark') {
+            icon.className = 'fas fa-moon icon';
+            text.textContent = 'Dark';
+        } else {
+            icon.className = 'fas fa-sun icon';
+            text.textContent = 'Light';
+        }
+    }
+}
+
 // UI Management
 class SimulatorUI {
     constructor() {
@@ -373,6 +427,12 @@ class SimulatorUI {
     }
 
     setupEventListeners() {
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+
         // Model selection
         this.elements.modelSelect.addEventListener('change', () => {
             this.updateModelControls();
@@ -462,27 +522,41 @@ class SimulatorUI {
         this.valueDisplays.durationValue.textContent = parseFloat(this.elements.duration.value).toFixed(1);
     }
 
+    getChartColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            gridColor: isDark ? '#334155' : '#e2e8f0',
+            zerolineColor: isDark ? '#475569' : '#cbd5e0',
+            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            textColor: isDark ? '#f1f5f9' : '#2d3748',
+            lineColor: isDark ? '#818cf8' : '#4f46e5'
+        };
+    }
+
     initializeChart() {
+        const colors = this.getChartColors();
         const layout = {
             title: false,
             xaxis: {
                 title: 'Voltage (V)',
-                gridcolor: '#e2e8f0',
+                gridcolor: colors.gridColor,
                 zeroline: true,
-                zerolinecolor: '#cbd5e0'
+                zerolinecolor: colors.zerolineColor,
+                color: colors.textColor
             },
             yaxis: {
                 title: 'Current (A)',
-                gridcolor: '#e2e8f0',
+                gridcolor: colors.gridColor,
                 zeroline: true,
-                zerolinecolor: '#cbd5e0'
+                zerolinecolor: colors.zerolineColor,
+                color: colors.textColor
             },
-            plot_bgcolor: '#ffffff',
-            paper_bgcolor: '#ffffff',
+            plot_bgcolor: colors.backgroundColor,
+            paper_bgcolor: colors.backgroundColor,
             font: {
                 family: 'Inter, sans-serif',
                 size: 12,
-                color: '#2d3748'
+                color: colors.textColor
             },
             margin: { t: 20, r: 20, b: 60, l: 80 }
         };
@@ -585,13 +659,14 @@ class SimulatorUI {
     }
 
     plotHysteresis(V_seq, I_mem) {
+        const colors = this.getChartColors();
         const trace = {
             x: V_seq,
             y: I_mem,
             type: 'scatter',
             mode: 'lines',
             line: {
-                color: '#667eea',
+                color: colors.lineColor,
                 width: 2
             },
             name: 'I-V Curve'
@@ -601,22 +676,24 @@ class SimulatorUI {
             title: false,
             xaxis: {
                 title: 'Voltage (V)',
-                gridcolor: '#e2e8f0',
+                gridcolor: colors.gridColor,
                 zeroline: true,
-                zerolinecolor: '#cbd5e0'
+                zerolinecolor: colors.zerolineColor,
+                color: colors.textColor
             },
             yaxis: {
                 title: 'Current (A)',
-                gridcolor: '#e2e8f0',
+                gridcolor: colors.gridColor,
                 zeroline: true,
-                zerolinecolor: '#cbd5e0'
+                zerolinecolor: colors.zerolineColor,
+                color: colors.textColor
             },
-            plot_bgcolor: '#ffffff',
-            paper_bgcolor: '#ffffff',
+            plot_bgcolor: colors.backgroundColor,
+            paper_bgcolor: colors.backgroundColor,
             font: {
                 family: 'Inter, sans-serif',
                 size: 12,
-                color: '#2d3748'
+                color: colors.textColor
             },
             margin: { t: 20, r: 20, b: 60, l: 80 },
             showlegend: false
@@ -649,5 +726,6 @@ class SimulatorUI {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new SimulatorUI();
+    initializeTheme();
+    window.simulatorUI = new SimulatorUI();
 });
