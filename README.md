@@ -7,4 +7,4 @@ Currently supported models:
 - Biolek Model
 - VTEAM Model
 - MMS Model
-- Yacopcic Model
+- Yakopcic Model
